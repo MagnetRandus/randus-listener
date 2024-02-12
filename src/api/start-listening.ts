@@ -4,6 +4,12 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
 
+/**
+ *
+ * @param AppConf USE HTTPS:
+ * https://adamtheautomator.com/https-nodejs/
+ */
+
 export function CreateListener(AppConf: OCONF) {
   try {
     // Create new express app
@@ -42,13 +48,17 @@ export function CreateListener(AppConf: OCONF) {
 
     // Define the routes
     expApp.get("/", (req, res) => {
-      if (req.headers.accept && req.headers.accept.includes("application/json")) {
-        const o = { you: "data" };
-        res.setHeader("Content-Type", "application/json");
-        res.setHeader("X-Powered-By", "Magnet-Randus");
-        res.json(o); // Send JSON response
+      if (req.headers.accept && req.headers.accept.indexOf(`text/html`) !== -1) {
+        res.status(400).send(`<html><header></header><body style="color:red"><div>Lots of goodies if you know where to look but text/html wont work</div></body></html>`);
       } else {
-        res.status(406).send(`We only understand JSON here`); // Send 406 Not Acceptable status
+        if (req.headers.accept && req.headers.accept.includes("application/json")) {
+          const o = { you: "data" };
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("X-Powered-By", "Magnet-Randus");
+          res.json(o); // Send JSON response
+        } else {
+          res.status(406).send(`We only understand JSON here`); // Send 406 Not Acceptable status
+        }
       }
     });
 
