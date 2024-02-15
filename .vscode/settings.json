@@ -7,4 +7,7 @@
     "editor.formatOnSaveMode": "file", // required to format on save
     "files.autoSave": "onFocusChange", // optional but recommended
     "vs-code-prettier-eslint.prettierLast": "false",
+    "yaml.schemas": {
+        "openapi:v3": "file:///home/atreyu/dev/randus-listen/src/api/klaas.yml"
+    },
 }

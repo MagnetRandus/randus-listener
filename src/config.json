@@ -1,0 +1,9 @@
+{
+  "http-info": {
+    "port-number": 443,
+    "header": {
+      "Content-Type": "application/json",
+      "X-Powered-By": "MagnetRandus"
+    }
+  }
+}

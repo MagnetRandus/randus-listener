@@ -1,0 +1,39 @@
+openapi: "3.0.2"
+info:
+  title: Klaas-Vakie
+  version: "1.0"
+servers:
+  - url: http://10.2.220.103
+paths:
+  /time:
+    get:
+      tags:
+        - getTime
+      summary: Get the time
+      description: ""
+      responses:
+        "200":
+          description: OK
+
+  /ask:
+    post:
+      tags:
+        - ask
+      summary: Dispatch the question
+      description: ""
+      operationId: questionDispatch
+      parameters:
+        - name: question
+          in: query
+          description: What is asked
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets

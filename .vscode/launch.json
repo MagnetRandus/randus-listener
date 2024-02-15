@@ -13,6 +13,13 @@
             "stopOnEntry": false
         },
         {
+            "type": "node",
+            "request": "launch",
+            "name": "gulpgulp",
+            "runtimeExecutable": "gulp",
+            "stopOnEntry": false
+        },
+        {
             "name": "Attach",
             "port": 9229,
             "request": "attach",

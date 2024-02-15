@@ -3,8 +3,10 @@ import dotenv from "dotenv";
 import { checkdotenv } from "./api/utils/environment";
 import { CreateListener } from "./api/start-listening";
 import { join } from "path";
+import yml from "yamljs";
 
 const appConf = require(join(__dirname, "config.json")) as OCONF;
+const swagDoc = yml.load(`${__dirname}/api/klaas.yml`);
 
 try {
   dotenv.config();
@@ -12,7 +14,7 @@ try {
     checkdotenv(process.env, v);
   });
 
-  CreateListener(appConf);
+  swagDoc ? CreateListener(appConf, swagDoc) : console.log("no swag file");
 } catch (err) {
   if (err instanceof Error) {
     console.log(`Oops, something crashed - here's some more info:`);

@@ -1,28 +1,49 @@
 // Import the required modules
 import express, { Request, Response, NextFunction } from "express";
-import bodyParser from "body-parser";
+import swaggerUI from "swagger-ui-express";
 import cors from "cors";
+import https from "https";
+import fs from "fs";
 import path from "path";
 
-export function CreateListener(AppConf: OCONF) {
+function httpHeaderDefaults(res: Response): void {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("X-Powered-By", "Magnet-Randus");
+}
+
+const [auth, log] = [
+  function (req: Request, res: Response, next: NextFunction) {
+    //auth
+    console.log(`AUTHING`);
+    next();
+  },
+  function (req: Request, res: Response, next: NextFunction) {
+    //log
+    console.log(`LOGGING`);
+    next();
+  }
+];
+
+export function CreateListener(AppConf: OCONF, swagDoc: swaggerUI.JsonObject) {
   try {
-    // Create new express app
     const expApp = express();
+    // Create new express app
+    expApp.use(cors());
+    // expApp.use(bodyParser);
+    expApp.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swagDoc));
 
-    const [auth, log] = [
-      function (req: Request, res: Response, next: NextFunction) {
-        //auth
-        console.log(`AUTHING`);
-        next();
-      },
-      function (req: Request, res: Response, next: NextFunction) {
-        //log
-        console.log(`LOGGING`);
-        next();
-      }
-    ];
+    const privateKey = fs.readFileSync(path.join(__dirname, "randus-listener.pem"), "utf8");
+    const certificate = fs.readFileSync(path.join(__dirname, "randus-listener-cert.pem"), "utf8");
+    const credentials = { key: privateKey, cert: certificate };
 
-    expApp.get("/", [auth, log], (req: Request, res: Response, next: NextFunction) => {
+    const server = https.createServer(credentials, expApp);
+
+    server.listen(AppConf["http-info"]["port-number"], () => {
+      console.log(`HTTPS Server running at https://0.0.0.0:${expApp.get("port")}`);
+    });
+
+    expApp.get("/time", [auth, log], (req: Request, res: Response) => {
+      httpHeaderDefaults(res);
       if (req.accepts([`html`, "text/plain"])) {
         //Get all the supported time zones:  Intl.supportedValuesOf('timeZone')
 
@@ -30,15 +51,39 @@ export function CreateListener(AppConf: OCONF) {
 
         const [h, m, s] = [d.getHours(), d.getMinutes(), d.getSeconds()].map((g) => g.toString().padStart(2, "0"));
 
-        res.send(`${h}:${m}:${s}`);
+        res.send(`<html><head></head><body><div>Express Yourself:  ${h}:${m}:${s}</div></body></html>`);
       } else {
         res.status(400);
+        res.send(`Sorry but I wasn't expecting the info to be: ${JSON.stringify(req.accepts())}`);
       }
     });
 
-    expApp.set("port", AppConf["http-info"]["port-number"]);
-    expApp.listen(expApp.get("port"), () => {
-      console.log("TypeScript app is running at http://0.0.0.0:%d", expApp.get("port"));
+    expApp.post(`/ask`, [auth, log], (req: Request, res: Response) => {
+      httpHeaderDefaults(res);
+      switch (req.route.path) {
+        case "/ask":
+          res.jsonp({ abc: 1 });
+          break;
+
+        default:
+          res.send(`You talk gibberish`);
+          break;
+      }
+    });
+
+    process.on("uncaughtException", (error) => {
+      console.error("Unhandled Exception:", error);
+      server.close(() => {
+        process.exit(1); // Exit the process
+      });
+    });
+
+    process.on("SIGINT", () => {
+      console.log("Received SIGINT. Closing server...");
+      server.close(() => {
+        console.log("Server closed.");
+        process.exit(0); // Exit the process
+      });
     });
   } catch (error) {
     throw error;
