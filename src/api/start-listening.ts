@@ -4,79 +4,39 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import path from "path";
 
-/**
- *
- * @param AppConf USE HTTPS:
- * https://adamtheautomator.com/https-nodejs/
- */
-
 export function CreateListener(AppConf: OCONF) {
   try {
     // Create new express app
     const expApp = express();
 
-    // Add the middleware to the app
-    expApp.use(bodyParser.json());
-    expApp.use(cors());
-    expApp.use(express.json());
+    const [auth, log] = [
+      function (req: Request, res: Response, next: NextFunction) {
+        //auth
+        console.log(`AUTHING`);
+        next();
+      },
+      function (req: Request, res: Response, next: NextFunction) {
+        //log
+        console.log(`LOGGING`);
+        next();
+      }
+    ];
 
-    // Using multiple handlers (middleware)
-    expApp.use((req, res, next) => {
-      console.log(`${req.method} ${req.originalUrl}`);
-      const startTime = new Date().getTime();
+    expApp.get("/", [auth, log], (req: Request, res: Response, next: NextFunction) => {
+      if (req.accepts([`html`, "text/plain"])) {
+        //Get all the supported time zones:  Intl.supportedValuesOf('timeZone')
 
-      // calling next middleware
-      next();
+        const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Africa/Johannesburg" }));
 
-      // Logging request duration after response has been sent
-      res.on("finish", () => {
-        const elapsedTime = new Date().getTime() - startTime;
-        console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${elapsedTime}ms`);
-      });
-    });
+        const [h, m, s] = [d.getHours(), d.getMinutes(), d.getSeconds()].map((g) => g.toString().padStart(2, "0"));
 
-    // Handle POST request to '/submit-data'
-    expApp.post("/submit-data", (req: Request, res: Response) => {
-      const { method, url } = req;
-      console.log(req.body); // Log data to the console
-      // Echo back the received data with a custom message
-      res.status(200).json({
-        message: "Data received successfully.",
-        receivedData: req.body
-      });
-    });
-
-    // Define the routes
-    expApp.get("/", (req, res) => {
-      if (req.headers.accept && req.headers.accept.indexOf(`text/html`) !== -1) {
-        res.status(400).send(`<html><header></header><body style="color:red"><div>Lots of goodies if you know where to look but text/html wont work</div></body></html>`);
+        res.send(`${h}:${m}:${s}`);
       } else {
-        if (req.headers.accept && req.headers.accept.includes("application/json")) {
-          const o = { you: "data" };
-          res.setHeader("Content-Type", "application/json");
-          res.setHeader("X-Powered-By", "Magnet-Randus");
-          res.json(o); // Send JSON response
-        } else {
-          res.status(406).send(`We only understand JSON here`); // Send 406 Not Acceptable status
-        }
+        res.status(400);
       }
     });
 
-    // Middleware for parsing JSON
-    // app.use(express.json());
-
-    // app.post("/api/users", (req, res) => {
-    //   // Handle the POST request (e.g., save user data to a database)
-    //   res.send("User created successfully!");
-    // });
-
-    // Custom middleware function to log request details
-
-    // Use the config file for the settings of the app
-
     expApp.set("port", AppConf["http-info"]["port-number"]);
-
-    // Start the server
     expApp.listen(expApp.get("port"), () => {
       console.log("TypeScript app is running at http://0.0.0.0:%d", expApp.get("port"));
     });
