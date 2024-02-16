@@ -1,9 +1,9 @@
 openapi: "3.0.2"
 info:
-  title: Klaas-Vakie
+  title: CodenameDev
   version: "1.0"
 servers:
-  - url: http://10.2.220.103
+  - url: https://localhost
 paths:
   /time:
     get:
@@ -14,7 +14,6 @@ paths:
       responses:
         "200":
           description: OK
-
   /ask:
     post:
       tags:
@@ -23,17 +22,27 @@ paths:
       description: ""
       operationId: questionDispatch
       parameters:
-        - name: question
+        - name: model
           in: query
-          description: What is asked
+          required: true
           schema:
             type: string
+            default: "gpt-3.5-turbo"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  example: "user"
+                content:
+                  type: string
+                  example: "echo my test message"
       responses:
         "200":
           description: OK
         "400":
           description: Invalid input
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets

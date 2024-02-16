@@ -5,6 +5,8 @@ import cors from "cors";
 import https from "https";
 import fs from "fs";
 import path from "path";
+import { talkagpt } from "./bridge/gap";
+import { ITalk } from "./types/talk";
 
 function httpHeaderDefaults(res: Response): void {
   res.setHeader("Content-Type", "application/json");
@@ -24,11 +26,35 @@ const [auth, log] = [
   }
 ];
 
-export function CreateListener(AppConf: OCONF, swagDoc: swaggerUI.JsonObject) {
+function collectBody(req: Request): Promise<ITalk> {
+  return new Promise<ITalk>((resolve, reject) => {
+    let dataChunks: Uint8Array[] = [];
+
+    req.on("data", (chunk: Uint8Array) => {
+      dataChunks.push(chunk);
+    });
+
+    req.on("end", () => {
+      const body = Buffer.concat(dataChunks).toString();
+
+      if (body) {
+        console.log(`got called`);
+        resolve(JSON.parse(body));
+      }
+
+      reject();
+    });
+  });
+}
+
+export function CreateListener(AppConf: OCONF, swagDoc: swaggerUI.JsonObject): void {
   try {
     const expApp = express();
     // Create new express app
-    expApp.use(cors());
+    const corsOptions: cors.CorsOptions = {
+      origin: ["https://atarendt.sharepoint.com", "https://localhost"]
+    };
+    expApp.use(cors(corsOptions));
     // expApp.use(bodyParser);
     expApp.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swagDoc));
 
@@ -62,7 +88,29 @@ export function CreateListener(AppConf: OCONF, swagDoc: swaggerUI.JsonObject) {
       httpHeaderDefaults(res);
       switch (req.route.path) {
         case "/ask":
-          res.jsonp({ abc: 1 });
+          try {
+            collectBody(req)
+              .then(async (reqsBody) => {
+                const q = req.query as { model: string };
+
+                const antwoord = await talkagpt(reqsBody, q.model);
+
+                res.status(200).json(antwoord.choices[0].message);
+              })
+              .catch((err) => {
+                throw new Error();
+              });
+          } catch (err) {
+            err instanceof Error && err.message ? res.status(404).send(err.message) : res.status(404).send(`You're talking gibberish!`);
+          }
+
+          // talkagpt(process.env.apikey, `This is a test message`)
+          //   .then((resolve) => {
+          //     res.json(resolve);
+          //   })
+          //   .catch((reject) => {
+          //     throw new Error(reject);
+          //   });
           break;
 
         default:
