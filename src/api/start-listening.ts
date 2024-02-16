@@ -32,8 +32,8 @@ export function CreateListener(AppConf: OCONF, swagDoc: swaggerUI.JsonObject) {
     // expApp.use(bodyParser);
     expApp.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swagDoc));
 
-    const privateKey = fs.readFileSync(path.join(__dirname, "randus-listener.pem"), "utf8");
-    const certificate = fs.readFileSync(path.join(__dirname, "randus-listener-cert.pem"), "utf8");
+    const privateKey = fs.readFileSync(path.join(__dirname, "rushstack-serve.key"), "utf8");
+    const certificate = fs.readFileSync(path.join(__dirname, "rushstack-serve.pem"), "utf8");
     const credentials = { key: privateKey, cert: certificate };
 
     const server = https.createServer(credentials, expApp);
